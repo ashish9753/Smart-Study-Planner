@@ -61,25 +61,15 @@ class StudyPlanner {
     }
 
     setupEventListeners() {
-        document.getElementById('quickTaskForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addQuickTask();
-        });
-
-        document.getElementById('taskForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addTask();
-        });
-
-        document.getElementById('scheduleForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addSchedule();
-        });
-
-        document.getElementById('subjectForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.addSubject();
-        });
+        ['quickTaskForm', 'taskForm', 'scheduleForm', 'subjectForm'].forEach(id => 
+            document.getElementById(id).addEventListener('submit', e => {
+                e.preventDefault();
+                if (id === 'quickTaskForm') this.addQuickTask();
+                else if (id === 'taskForm') this.addTask();
+                else if (id === 'scheduleForm') this.addSchedule();
+                else if (id === 'subjectForm') this.addSubject();
+            })
+        );
     }
 
     // Subject Management Methods
@@ -319,11 +309,9 @@ class StudyPlanner {
     }
 
     updateStats() {
-        const totalTasks = this.tasks.length;
-        const completedTasks = this.tasks.filter(task => task.status === 'completed').length;
-        
-        document.getElementById('totalTasks').textContent = totalTasks;
-        document.getElementById('completedTasks').textContent = completedTasks;
+        const [total, completed] = [this.tasks.length, this.tasks.filter(t => t.status === 'completed').length];
+        document.getElementById('totalTasks').textContent = total;
+        document.getElementById('completedTasks').textContent = completed;
         document.getElementById('studyStreak').textContent = this.studyStreak;
         document.getElementById('pomodoroCount').textContent = this.pomodoroCount;
     }
@@ -336,50 +324,15 @@ class StudyPlanner {
 
     renderTodaySchedule() {
         const today = new Date().toISOString().split('T')[0];
-        const todaySchedules = this.schedules.filter(schedule => schedule.date === today);
+        const todaySchedules = this.schedules.filter(s => s.date === today).sort((a, b) => a.startTime.localeCompare(b.startTime));
         const container = document.getElementById('todaySchedule');
-
-        if (todaySchedules.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center;">No schedules for today</p>';
-            return;
-        }
-
-        container.innerHTML = todaySchedules
-            .sort((a, b) => a.startTime.localeCompare(b.startTime))
-            .map(schedule => `
-                <div class="schedule-item">
-                    <strong>${schedule.title}</strong>
-                    <div>${schedule.startTime} - ${schedule.endTime}</div>
-                    <div style="font-size: 0.9em; opacity: 0.8;">${schedule.subject}</div>
-                </div>
-            `).join('');
+        container.innerHTML = todaySchedules.length ? todaySchedules.map(s => `<div class="schedule-item"><strong>${s.title}</strong><div>${s.startTime} - ${s.endTime}</div><div style="font-size: 0.9em; opacity: 0.8;">${s.subject}</div></div>`).join('') : '<p style="color: #666; text-align: center;">No schedules</p>';
     }
 
     renderUpcomingTasks() {
-        const upcomingTasks = this.tasks
-            .filter(task => task.status === 'pending')
-            .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
-            .slice(0, 5);
-
+        const upcoming = this.tasks.filter(t => t.status === 'pending').sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)).slice(0, 5);
         const container = document.getElementById('upcomingTasks');
-
-        if (upcomingTasks.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center;">No upcoming tasks</p>';
-            return;
-        }
-
-        container.innerHTML = upcomingTasks.map(task => `
-            <div class="task-item" onclick="completeTask(${task.id})">
-                <div class="task-info">
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-meta">
-                        <span>${task.subject}</span>
-                        <span class="task-priority ${task.priority}">${task.priority}</span>
-                        <span>Due: ${new Date(task.dueDate).toLocaleDateString()}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
+        container.innerHTML = upcoming.length ? upcoming.map(t => `<div class="task-item" onclick="completeTask(${t.id})"><div class="task-info"><div class="task-title">${t.title}</div><div class="task-meta"><span>${t.subject}</span><span class="task-priority ${t.priority}">${t.priority}</span><span>Due: ${new Date(t.dueDate).toLocaleDateString()}</span></div></div></div>`).join('') : '<p style="color: #666; text-align: center;">No upcoming tasks</p>';
     }
 
     renderProgressCircle() {
@@ -416,53 +369,18 @@ class StudyPlanner {
 
     renderTasks() {
         const container = document.getElementById('taskList');
-        const filteredTasks = this.getFilteredTasks();
-
-        if (filteredTasks.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">No tasks found</p>';
-            return;
-        }
-
-        container.innerHTML = filteredTasks.map(task => `
-            <div class="task-item ${task.status}">
-                <div class="task-info">
-                    <div class="task-title">${task.title}</div>
-                    <div class="task-meta">
-                        <span>${task.subject}</span>
-                        <span class="task-priority ${task.priority}">${task.priority}</span>
-                        <span>Due: ${new Date(task.dueDate).toLocaleDateString()}</span>
-                        <span>Status: ${task.status}</span>
-                    </div>
-                    ${task.description ? `<p style="margin-top: 8px; color: #666;">${task.description}</p>` : ''}
-                </div>
-                <div class="task-actions">
-                    ${task.status !== 'completed' ? `<button class="btn-complete" onclick="completeTask(${task.id})">Complete</button>` : ''}
-                    <button class="btn-edit" onclick="editTask(${task.id})">Edit</button>
-                    <button class="btn-delete" onclick="deleteTask(${task.id})">Delete</button>
-                </div>
-            </div>
-        `).join('');
+        const filtered = this.getFilteredTasks();
+        container.innerHTML = filtered.length ? filtered.map(t => `<div class="task-item ${t.status}"><div class="task-info"><div class="task-title">${t.title}</div><div class="task-meta"><span>${t.subject}</span><span class="task-priority ${t.priority}">${t.priority}</span><span>Due: ${new Date(t.dueDate).toLocaleDateString()}</span><span>Status: ${t.status}</span></div>${t.description ? `<p style="margin-top: 8px; color: #666;">${t.description}</p>` : ''}</div><div class="task-actions">${t.status !== 'completed' ? `<button class="btn-complete" onclick="completeTask(${t.id})">Complete</button>` : ''}<button class="btn-edit" onclick="editTask(${t.id})">Edit</button><button class="btn-delete" onclick="deleteTask(${t.id})">Delete</button></div></div>`).join('') : '<p style="color: #666; text-align: center; padding: 20px;">No tasks found</p>';
     }
 
     getFilteredTasks() {
         let filtered = [...this.tasks];
-
         const subjectFilter = document.getElementById('filterSubject').value;
         const statusFilter = document.getElementById('filterStatus').value;
         const priorityFilter = document.getElementById('filterPriority').value;
-
-        if (subjectFilter !== 'all') {
-            filtered = filtered.filter(task => task.subject === subjectFilter);
-        }
-
-        if (statusFilter !== 'all') {
-            filtered = filtered.filter(task => task.status === statusFilter);
-        }
-
-        if (priorityFilter !== 'all') {
-            filtered = filtered.filter(task => task.priority === priorityFilter);
-        }
-
+        if (subjectFilter !== 'all') filtered = filtered.filter(t => t.subject === subjectFilter);
+        if (statusFilter !== 'all') filtered = filtered.filter(t => t.status === statusFilter);
+        if (priorityFilter !== 'all') filtered = filtered.filter(t => t.priority === priorityFilter);
         return filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
     }
 
@@ -596,13 +514,8 @@ class StudyPlanner {
         if (!this.timerState.isRunning) {
             this.timerState.isRunning = true;
             this.timerInterval = setInterval(() => {
-                if (this.timerState.time > 0) {
-                    this.timerState.time--;
-                    this.updateTimerDisplay();
-                    this.drawTimerCircle();
-                } else {
-                    this.completeTimerSession();
-                }
+                if (this.timerState.time > 0) { this.timerState.time--; this.updateTimerDisplay(); this.drawTimerCircle(); }
+                else this.completeTimerSession();
             }, 1000);
         }
     }
@@ -622,12 +535,10 @@ class StudyPlanner {
 
     completeTimerSession() {
         this.pauseTimer();
-        
         if (this.timerState.mode === 'focus') {
             this.pomodoroCount++;
             localStorage.setItem('pomodoroCount', this.pomodoroCount);
             this.updateStats();
-            
             const isLongBreak = this.pomodoroCount % 4 === 0;
             this.timerState.mode = isLongBreak ? 'longBreak' : 'shortBreak';
             this.timerState.time = isLongBreak ? this.timerState.longBreak * 60 : this.timerState.shortBreak * 60;
@@ -635,48 +546,30 @@ class StudyPlanner {
             this.timerState.mode = 'focus';
             this.timerState.time = this.timerState.focusTime * 60;
         }
-        
         this.updateTimerDisplay();
         this.drawTimerCircle();
         this.showNotification('Timer Complete!');
     }
 
     updateTimerDisplay() {
-        const minutes = Math.floor(this.timerState.time / 60);
-        const seconds = this.timerState.time % 60;
-        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
-        document.getElementById('timerTime').textContent = timeString;
-        document.getElementById('timerMode').textContent = 
-            this.timerState.mode === 'focus' ? 'Focus Time' :
-            this.timerState.mode === 'shortBreak' ? 'Short Break' : 'Long Break';
-        
+        const m = Math.floor(this.timerState.time / 60), s = this.timerState.time % 60;
+        document.getElementById('timerTime').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        document.getElementById('timerMode').textContent = this.timerState.mode === 'focus' ? 'Focus Time' : this.timerState.mode === 'shortBreak' ? 'Short Break' : 'Long Break';
         this.updateTodayStudyTime();
     }
 
     drawTimerCircle() {
         const canvas = document.getElementById('timerCanvas');
         if (!canvas) return;
-        
-        const ctx = canvas.getContext('2d');
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const radius = 100;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const totalTime = this.timerState.mode === 'focus' ? this.timerState.focusTime * 60 :
-                         this.timerState.mode === 'shortBreak' ? this.timerState.shortBreak * 60 :
-                         this.timerState.longBreak * 60;
-        
+        const ctx = canvas.getContext('2d'), centerX = canvas.width / 2, centerY = canvas.height / 2, radius = 100;
+        const totalTime = this.timerState.mode === 'focus' ? this.timerState.focusTime * 60 : this.timerState.mode === 'shortBreak' ? this.timerState.shortBreak * 60 : this.timerState.longBreak * 60;
         const progress = (totalTime - this.timerState.time) / totalTime;
-
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
         ctx.strokeStyle = '#e1e5e9';
         ctx.lineWidth = 8;
         ctx.stroke();
-
         if (progress > 0) {
             ctx.beginPath();
             ctx.arc(centerX, centerY, radius, -Math.PI / 2, (-Math.PI / 2) + (2 * Math.PI * progress));
@@ -693,10 +586,18 @@ class StudyPlanner {
         document.getElementById('todayStudyTime').textContent = `${hours}h ${minutes}m`;
     }
 
+    initializeSettings() {
+        document.getElementById('themeSelect').value = this.settings.theme;
+        document.getElementById('accentColor').value = this.settings.accentColor;
+        document.getElementById('enableNotifications').checked = this.settings.enableNotifications;
+        document.getElementById('alertTime').value = this.settings.alertTime;
+        document.getElementById('defaultStudyTime').value = this.settings.defaultStudyTime;
+        document.getElementById('weekStart').value = this.settings.weekStart;
+    }
+
     checkDailyStreak() {
         const lastStudyDate = localStorage.getItem('lastStudyDate');
         const today = new Date().toDateString();
-        
         if (lastStudyDate !== today && this.pomodoroCount > 0) {
             this.studyStreak++;
             localStorage.setItem('studyStreak', this.studyStreak);
@@ -705,29 +606,11 @@ class StudyPlanner {
         }
     }
 
-    showNotification(message) {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Smart Study Planner', { body: message });
-        } else {
-            alert(message);
-        }
-    }
-
     saveData() {
         localStorage.setItem('tasks', JSON.stringify(this.tasks));
         localStorage.setItem('schedules', JSON.stringify(this.schedules));
         localStorage.setItem('subjects', JSON.stringify(this.subjects));
         localStorage.setItem('settings', JSON.stringify(this.settings));
-    }
-
-    // Settings Methods
-    initializeSettings() {
-        document.getElementById('themeSelect').value = this.settings.theme;
-        document.getElementById('accentColor').value = this.settings.accentColor;
-        document.getElementById('enableNotifications').checked = this.settings.enableNotifications;
-        document.getElementById('alertTime').value = this.settings.alertTime;
-        document.getElementById('defaultStudyTime').value = this.settings.defaultStudyTime;
-        document.getElementById('weekStart').value = this.settings.weekStart;
     }
 
     applyTheme() {
@@ -741,23 +624,9 @@ class StudyPlanner {
         document.documentElement.style.setProperty('--accent-color', this.settings.accentColor);
     }
 
-    // Settings Event Handlers
-    changeTheme() {
-        this.settings.theme = document.getElementById('themeSelect').value;
-        this.applyTheme();
-        this.saveData();
-    }
-
-    changeAccentColor() {
-        this.settings.accentColor = document.getElementById('accentColor').value;
-        this.applyTheme();
-        this.saveData();
-    }
-
-    toggleNotifications() {
-        this.settings.enableNotifications = document.getElementById('enableNotifications').checked;
-        this.saveData();
-    }
+    changeTheme() { this.settings.theme = document.getElementById('themeSelect').value; this.applyTheme(); this.saveData(); }
+    changeAccentColor() { this.settings.accentColor = document.getElementById('accentColor').value; this.applyTheme(); this.saveData(); }
+    toggleNotifications() { this.settings.enableNotifications = document.getElementById('enableNotifications').checked; this.saveData(); }
 
     // Data Management
     exportData() {
@@ -841,30 +710,22 @@ class StudyPlanner {
     }
 
     showNotification(title, body) {
-        if ('Notification' in window) {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body, icon: '/favicon.ico' });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        new Notification(title, { body, icon: '/favicon.ico' });
-                    }
-                });
-            }
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: '/favicon.ico' });
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(p => {
+                if (p === 'granted') new Notification(title, { body, icon: '/favicon.ico' });
+            });
         }
     }
 
-    // Schedule Conflict Detection
     checkScheduleConflict(newSchedule) {
         const newStart = new Date(`${newSchedule.date} ${newSchedule.startTime}`);
         const newEnd = new Date(`${newSchedule.date} ${newSchedule.endTime}`);
-
         return this.schedules.some(schedule => {
-            if (schedule.id === newSchedule.id) return false; // Skip self when editing
-            
+            if (schedule.id === newSchedule.id) return false;
             const existingStart = new Date(`${schedule.date} ${schedule.startTime}`);
             const existingEnd = new Date(`${schedule.date} ${schedule.endTime}`);
-
             return (newStart < existingEnd && newEnd > existingStart);
         });
     }
@@ -873,195 +734,95 @@ class StudyPlanner {
 const studyPlanner = new StudyPlanner();
 
 function showTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
-    });
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(tabName).classList.add('active');
     event.target.classList.add('active');
-
-    if (tabName === 'progress') {
-        setTimeout(() => studyPlanner.renderProgressCharts(), 100);
-    }
+    if (tabName === 'progress') setTimeout(() => studyPlanner.renderProgressCharts(), 100);
 }
 
-function openTaskModal() {
-    document.getElementById('taskModal').classList.add('active');
-    document.getElementById('modalTitle').textContent = 'Add New Task';
-    document.getElementById('taskForm').reset();
-}
-
-function closeTaskModal() {
-    document.getElementById('taskModal').classList.remove('active');
-}
-
-function openScheduleModal() {
-    document.getElementById('scheduleModal').classList.add('active');
-    document.getElementById('scheduleForm').reset();
-}
-
-function closeScheduleModal() {
-    document.getElementById('scheduleModal').classList.remove('active');
-}
-
-function completeTask(taskId) {
-    const task = studyPlanner.tasks.find(t => t.id === taskId);
-    if (task) {
-        task.status = 'completed';
-        studyPlanner.saveData();
-        studyPlanner.updateStats();
-        studyPlanner.renderDashboard();
-        studyPlanner.renderTasks();
-    }
-}
+document.addEventListener('DOMContentLoaded', () => {
+    if ('Notification' in window) Notification.requestPermission();
+    ['focusTime', 'shortBreak', 'longBreak'].forEach(id => {
+        document.getElementById(id).addEventListener('change', e => {
+            const val = parseInt(e.target.value);
+            if (id === 'focusTime') {
+                studyPlanner.timerState.focusTime = val;
+                if (studyPlanner.timerState.mode === 'focus' && !studyPlanner.timerState.isRunning) {
+                    studyPlanner.timerState.time = val * 60;
+                    studyPlanner.updateTimerDisplay();
+                    studyPlanner.drawTimerCircle();
+                }
+            } else studyPlanner.timerState[id] = val;
+        });
+    });
+});
 
 function editTask(taskId) {
     const task = studyPlanner.tasks.find(t => t.id === taskId);
-    if (task) {
-        document.getElementById('modalTitle').textContent = 'Edit Task';
-        document.getElementById('taskTitle').value = task.title;
-        document.getElementById('taskDescription').value = task.description || '';
-        document.getElementById('taskSubject').value = task.subject;
-        document.getElementById('taskPriority').value = task.priority;
-        document.getElementById('taskDueDate').value = task.dueDate;
-        document.getElementById('taskEstimatedTime').value = task.estimatedTime || '';
-        
-        document.getElementById('taskModal').classList.add('active');
-        
-        document.getElementById('taskForm').onsubmit = function(e) {
-            e.preventDefault();
-            
-            task.title = document.getElementById('taskTitle').value.trim();
-            task.description = document.getElementById('taskDescription').value.trim();
-            task.subject = document.getElementById('taskSubject').value;
-            task.priority = document.getElementById('taskPriority').value;
-            task.dueDate = document.getElementById('taskDueDate').value;
-            task.estimatedTime = document.getElementById('taskEstimatedTime').value;
-            
-            studyPlanner.saveData();
-            studyPlanner.updateStats();
-            studyPlanner.renderDashboard();
-            studyPlanner.renderTasks();
-            closeTaskModal();
-            
-            document.getElementById('taskForm').onsubmit = null;
-        };
-    }
-}
-
-function deleteTask(taskId) {
-    if (confirm('Are you sure you want to delete this task?')) {
-        studyPlanner.tasks = studyPlanner.tasks.filter(t => t.id !== taskId);
+    if (!task) return;
+    document.getElementById('modalTitle').textContent = 'Edit Task';
+    document.getElementById('taskTitle').value = task.title;
+    document.getElementById('taskDescription').value = task.description || '';
+    document.getElementById('taskSubject').value = task.subject;
+    document.getElementById('taskPriority').value = task.priority;
+    document.getElementById('taskDueDate').value = task.dueDate;
+    document.getElementById('taskEstimatedTime').value = task.estimatedTime || '';
+    document.getElementById('taskModal').classList.add('active');
+    document.getElementById('taskForm').onsubmit = function(e) {
+        e.preventDefault();
+        task.title = document.getElementById('taskTitle').value.trim();
+        task.description = document.getElementById('taskDescription').value.trim();
+        task.subject = document.getElementById('taskSubject').value;
+        task.priority = document.getElementById('taskPriority').value;
+        task.dueDate = document.getElementById('taskDueDate').value;
+        task.estimatedTime = document.getElementById('taskEstimatedTime').value;
         studyPlanner.saveData();
         studyPlanner.updateStats();
         studyPlanner.renderDashboard();
         studyPlanner.renderTasks();
-    }
+        closeTaskModal();
+        document.getElementById('taskForm').onsubmit = null;
+    };
+}
+
+function deleteTask(taskId) {
+    if (!confirm('Delete this task?')) return;
+    studyPlanner.tasks = studyPlanner.tasks.filter(t => t.id !== taskId);
+    studyPlanner.saveData();
+    studyPlanner.updateStats();
+    studyPlanner.renderDashboard();
+    studyPlanner.renderTasks();
 }
 
 function editSchedule(scheduleId) {
     const schedule = studyPlanner.schedules.find(s => s.id === scheduleId);
-    if (schedule) {
-        document.getElementById('scheduleTitle').value = schedule.title;
-        document.getElementById('scheduleDate').value = schedule.date;
-        document.getElementById('scheduleSubject').value = schedule.subject;
-        document.getElementById('scheduleStartTime').value = schedule.startTime;
-        document.getElementById('scheduleEndTime').value = schedule.endTime;
-        document.getElementById('scheduleNotes').value = schedule.notes || '';
-        
-        document.getElementById('scheduleModal').classList.add('active');
-    }
+    if (!schedule) return;
+    document.getElementById('scheduleTitle').value = schedule.title;
+    document.getElementById('scheduleDate').value = schedule.date;
+    document.getElementById('scheduleSubject').value = schedule.subject;
+    document.getElementById('scheduleStartTime').value = schedule.startTime;
+    document.getElementById('scheduleEndTime').value = schedule.endTime;
+    document.getElementById('scheduleNotes').value = schedule.notes || '';
+    document.getElementById('scheduleModal').classList.add('active');
 }
 
-function filterTasks() {
-    studyPlanner.renderTasks();
-}
-
-function previousWeek() {
-    studyPlanner.currentWeek.setDate(studyPlanner.currentWeek.getDate() - 7);
-    studyPlanner.renderWeeklyCalendar();
-}
-
-function nextWeek() {
-    studyPlanner.currentWeek.setDate(studyPlanner.currentWeek.getDate() + 7);
-    studyPlanner.renderWeeklyCalendar();
-}
-
-function startTimer() {
-    studyPlanner.startTimer();
-}
-
-function pauseTimer() {
-    studyPlanner.pauseTimer();
-}
-
-function resetTimer() {
-    studyPlanner.resetTimer();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    if ('Notification' in window) {
-        Notification.requestPermission();
-    }
-    
-    document.getElementById('focusTime').addEventListener('change', (e) => {
-        studyPlanner.timerState.focusTime = parseInt(e.target.value);
-        if (studyPlanner.timerState.mode === 'focus' && !studyPlanner.timerState.isRunning) {
-            studyPlanner.timerState.time = studyPlanner.timerState.focusTime * 60;
-            studyPlanner.updateTimerDisplay();
-            studyPlanner.drawTimerCircle();
-        }
-    });
-    
-    document.getElementById('shortBreak').addEventListener('change', (e) => {
-        studyPlanner.timerState.shortBreak = parseInt(e.target.value);
-    });
-    
-    document.getElementById('longBreak').addEventListener('change', (e) => {
-        studyPlanner.timerState.longBreak = parseInt(e.target.value);
-    });
-});
-
-// Global Functions for Subject Management
-function openSubjectModal() {
-    document.getElementById('subjectModalTitle').textContent = 'Add New Subject';
-    document.getElementById('subjectForm').reset();
-    document.getElementById('subjectModal').style.display = 'block';
-    
-    document.getElementById('subjectForm').onsubmit = (e) => {
-        e.preventDefault();
-        studyPlanner.addSubject();
-    };
-}
-
-function closeSubjectModal() {
-    document.getElementById('subjectModal').style.display = 'none';
-}
-
-// Global Functions for Settings
-function changeTheme() {
-    studyPlanner.changeTheme();
-}
-
-function changeAccentColor() {
-    studyPlanner.changeAccentColor();
-}
-
-function toggleNotifications() {
-    studyPlanner.toggleNotifications();
-}
-
-function exportData() {
-    studyPlanner.exportData();
-}
-
-function importData(fileInput) {
-    studyPlanner.importData(fileInput);
-}
-
-function resetAllData() {
-    studyPlanner.resetAllData();
-}
+function previousWeek() { studyPlanner.currentWeek.setDate(studyPlanner.currentWeek.getDate() - 7); studyPlanner.renderWeeklyCalendar(); }
+function nextWeek() { studyPlanner.currentWeek.setDate(studyPlanner.currentWeek.getDate() + 7); studyPlanner.renderWeeklyCalendar(); }
+function filterTasks() { studyPlanner.renderTasks(); }
+function openTaskModal() { document.getElementById('taskModal').classList.add('active'); document.getElementById('modalTitle').textContent = 'Add New Task'; document.getElementById('taskForm').reset(); }
+function closeTaskModal() { document.getElementById('taskModal').classList.remove('active'); }
+function openScheduleModal() { document.getElementById('scheduleModal').classList.add('active'); document.getElementById('scheduleForm').reset(); }
+function closeScheduleModal() { document.getElementById('scheduleModal').classList.remove('active'); }
+function openSubjectModal() { document.getElementById('subjectModalTitle').textContent = 'Add New Subject'; document.getElementById('subjectForm').reset(); document.getElementById('subjectModal').style.display = 'block'; document.getElementById('subjectForm').onsubmit = (e) => { e.preventDefault(); studyPlanner.addSubject(); }; }
+function closeSubjectModal() { document.getElementById('subjectModal').style.display = 'none'; }
+function completeTask(taskId) { const t = studyPlanner.tasks.find(x => x.id === taskId); if (t) { t.status = 'completed'; studyPlanner.saveData(); studyPlanner.updateStats(); studyPlanner.renderDashboard(); studyPlanner.renderTasks(); } }
+function startTimer() { studyPlanner.startTimer(); }
+function pauseTimer() { studyPlanner.pauseTimer(); }
+function resetTimer() { studyPlanner.resetTimer(); }
+function changeTheme() { studyPlanner.changeTheme(); }
+function changeAccentColor() { studyPlanner.changeAccentColor(); }
+function toggleNotifications() { studyPlanner.toggleNotifications(); }
+function exportData() { studyPlanner.exportData(); }
+function importData(fileInput) { studyPlanner.importData(fileInput); }
+function resetAllData() { studyPlanner.resetAllData(); }

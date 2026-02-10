@@ -68,18 +68,11 @@
                         <h3><i class="fas fa-plus-circle"></i> Quick Add Task</h3>
                         <form id="quickTaskForm">
                             <input type="text" id="quickTaskInput" placeholder="Enter task title" required>
-                            <select id="quickSubject">
-                                <option value="Mathematics">Mathematics</option>
-                                <option value="Science">Science</option>
-                                <option value="English">English</option>
-                                <option value="History">History</option>
-                                <option value="Programming">Programming</option>
-                                <option value="Other">Other</option>
-                            </select>
+                            <select id="quickSubject"></select>
                             <select id="quickPriority">
-                                <option value="low">Low Priority</option>
-                                <option value="medium" selected>Medium Priority</option>
-                                <option value="high">High Priority</option>
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
                             </select>
                             <button type="submit">Add Task</button>
                         </form>
@@ -117,28 +110,18 @@
                 </div>
                 
                 <div class="filters">
-                    <select id="filterSubject" onchange="filterTasks()">
-                        <option value="all">All Subjects</option>
-                        <option value="Mathematics">Mathematics</option>
-                        <option value="Science">Science</option>
-                        <option value="English">English</option>
-                        <option value="History">History</option>
-                        <option value="Programming">Programming</option>
-                        <option value="Other">Other</option>
-                    </select>
-                    
+                    <select id="filterSubject" onchange="filterTasks()"></select>
                     <select id="filterStatus" onchange="filterTasks()">
                         <option value="all">All Status</option>
                         <option value="pending">Pending</option>
                         <option value="in-progress">In Progress</option>
                         <option value="completed">Completed</option>
                     </select>
-                    
                     <select id="filterPriority" onchange="filterTasks()">
                         <option value="all">All Priorities</option>
-                        <option value="high">High Priority</option>
-                        <option value="medium">Medium Priority</option>
-                        <option value="low">Low Priority</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
                     </select>
                 </div>
 
@@ -356,16 +339,8 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Subject:</label>
-                        <select id="taskSubject">
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Science">Science</option>
-                            <option value="English">English</option>
-                            <option value="History">History</option>
-                            <option value="Programming">Programming</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <select id="taskSubject"></select>
                     </div>
-                    
                     <div class="form-group">
                         <label>Priority:</label>
                         <select id="taskPriority">
@@ -413,17 +388,9 @@
                         <label>Date:</label>
                         <input type="date" id="scheduleDate" required>
                     </div>
-                    
                     <div class="form-group">
                         <label>Subject:</label>
-                        <select id="scheduleSubject">
-                            <option value="Mathematics">Mathematics</option>
-                            <option value="Science">Science</option>
-                            <option value="English">English</option>
-                            <option value="History">History</option>
-                            <option value="Programming">Programming</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <select id="scheduleSubject"></select>
                     </div>
                 </div>
                 
